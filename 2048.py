@@ -23,9 +23,10 @@ BLACK   = pygame.color.THECOLORS["black"]
 GOLD    =  pygame.color.THECOLORS["gold"]
 GRAY    = pygame.color.THECOLORS["gray41"]
 FORESTGREEN = pygame.color.THECOLORS['forestgreen']
-
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), 0, 32)
-pygame.display.set_caption("2048")
+def init():
+	global screen
+	screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), 0, 32)
+	pygame.display.set_caption("2048")
 
 def draw_box(board):
 	colors = {
@@ -76,11 +77,16 @@ def write(msg="pygame is cool", color= BLACK, height = 14):
 	mytext = mytext.convert_alpha()
 	return mytext
   
-def add_num(board):  
+def add_num(board):
+	pool = []
 	k = 2 if random.randrange(0, 10) > 1 else 4
+	for i in range(4):
+		for j in range(4):
+			if board[i][j] == 0:
+				pool.append([i, j])
+	s = random.choice(pool)
+	board[s[0]][s[1]] = k
 	s = divmod(random.randrange(0, 16), 4)
-        if board[s[0]][s[1]] == 0:
-            board[s[0]][s[1]] = k
 
 def init_board(board):
 	for i in range(2):
@@ -101,59 +107,67 @@ def check(board):
   
 def move_left(board):
 	global score
+	v = deepcopy(board)
 	for i in range(4):
 		for j in [0, 1, 2, 3]:
 			for k in [0, 1, 2]:
-				if board[j][k] == 0:
-					board[j][k] = board[j][k+1]
-					board[j][k+1] = 0
-				if board[j][k] == board[j][k+1]:
-					board[j][k] *= 2
-					score += board[j][k]
-					board[j][k+1] = 0
+				if v[j][k] == 0:
+					v[j][k] = v[j][k+1]
+					v[j][k+1] = 0
+				if v[j][k] == v[j][k+1]:
+					v[j][k] *= 2
+					score += v[j][k]
+					v[j][k+1] = 0
+	return v
 
 def move_right(board):
 	global score
-	for row in board:
-		for i in range(4):
-			for j in [0, 1, 2, 3]:
-				for k in [1, 2, 3]:
-					if board[j][k] == 0:
-						board[j][k] = board[j][k-1]
-						board[j][k-1] = 0
-					if board[j][k] == board[j][k-1]:
-						board[j][k] *= 2
-						score += board[j][k]
-						board[j][k-1] = 0
+	v = deepcopy(board)
+	for i in range(4):
+		for j in [0, 1, 2, 3]:
+			for k in [3, 2, 1]:
+				if v[j][k] == 0:
+					v[j][k] = v[j][k-1]
+					v[j][k-1] = 0
+				if v[j][k] == v[j][k-1]:
+					v[j][k] *= 2
+					score += v[j][k]
+					v[j][k-1] = 0
+	return v
 
 def move_up(board):
 	global score
+	v = deepcopy(board)
 	for i in range(4):
 		for j in [0, 1, 2, 3]:
 			for k in [0, 1, 2]:
-				if board[k][j] == 0:
-					board[k][j] = board[k+1][j]
-					board[k+1][j] = 0
-				if board[k][j] == board[k+1][j]:
-					board[k][j] *= 2
-					score += board[k][j]
-					board[k+1][j] = 0
+				if v[k][j] == 0:
+					v[k][j] = v[k+1][j]
+					v[k+1][j] = 0
+				if v[k][j] == v[k+1][j]:
+					v[k][j] *= 2
+					score += v[k][j]
+					v[k+1][j] = 0
+	return v
 
 def move_down(board):
 	global score
+	v = deepcopy(board)
 	for i in range(4):
 		for j in [0, 1, 2, 3]:
-			for k in [1, 2, 3]:
-				if board[k][j] == 0:
-					board[k][j] = board[k-1][j]
-					board[k-1][j] = 0
-				if board[k][j] == board[k-1][j]:
-					board[k][j] *= 2
-					score += board[k][j]
-					board[k-1][j] = 0
+			for k in [3, 2, 1]:
+				if v[k][j] == 0:
+					v[k][j] = v[k-1][j]
+					v[k-1][j] = 0
+				if v[k][j] == v[k-1][j]:
+					v[k][j] *= 2
+					score += v[k][j]
+					v[k-1][j] = 0
+	return v
 
 def main(board):
 	global score
+	init()
 	init_board(board)
 	newboard = deepcopy(board)
 	gameover = check(board)
@@ -174,13 +188,13 @@ def main(board):
 				pygame.display.quit()
 			elif not gameover:
 				if event.type == KEYUP and event.key == K_UP:
-					move_up(board)
+					board = move_up(board)
 				elif event.type == KEYUP and event.key == K_DOWN:
-					move_down(board)
+					board = move_down(board)
 				elif event.type == KEYUP and event.key == K_LEFT:
-					move_left(board)
+					board = move_left(board)
 				elif event.type == KEYUP and event.key == K_RIGHT:
-					move_right(board)
+					board = move_right(board)
 				if newboard != board:
 					add_num(board)
 					newboard = deepcopy(board)
@@ -198,5 +212,65 @@ def main(board):
 
 		pygame.display.update()
 
+
+# AI for game 2048
+def display(board):
+	print('{0:4} {1:4} {2:4} {3:4}'.format(board[0][0], board[0][1], board[0][2], board[0][3]))
+	print('{0:4} {1:4} {2:4} {3:4}'.format(board[1][0], board[1][1], board[1][2], board[1][3]))
+	print('{0:4} {1:4} {2:4} {3:4}'.format(board[2][0], board[2][1], board[2][2], board[2][3]))
+	print('{0:4} {1:4} {2:4} {3:4}'.format(board[3][0], board[3][1], board[3][2], board[3][3]))
+
+def ai(board):
+	global score
+	init_board(board)
+	newboard = deepcopy(board)
+	gameover = check(board)
+	number = 0
+	while not gameover:
+		board = get_min_smooth(board)
+		if newboard == board:
+			board = random.choice([move_left(board), move_right(board), move_up(board), move_down(board)])
+
+		if newboard != board:
+			add_num(board)
+			newboard = deepcopy(board)
+		elif newboard == board:
+			break
+		gameover = check(board)
+		print number
+		number += 1
+		
+		
+
+		display(board)
+		print smooth_price(board)
+	pool = []
+	for i in range(4):
+		for j in range(4):
+			pool.append(board[i][j])
+	max_cell = max(pool)
+	print max_cell
+	
+
+def smooth_price(board):
+	smooth = 0
+	for i in range(4):
+		smooth += abs(board[i][0] - board[i][1]) + abs(board[i][1] - board[i][2]) + abs(board[i][2] - board[i][3])
+	for j in range(4):
+		smooth += abs(board[0][j] - board[1][j]) + abs(board[1][j] - board[2][j]) + abs(board[2][j] - board[3][j])
+	return smooth
+
+def get_min_smooth(board):
+	next_step = [move_left(board), move_right(board), move_up(board), move_down(board)]
+	my_list = map(smooth_price, next_step)
+	min_smooth = my_list[0]
+	for i in my_list:
+		if i < min_smooth:
+			min_smooth = i
+	x = my_list.index(min_smooth)
+	return next_step[x]
+
+
 if __name__ == "__main__":
     main(board)
+    # ai(board)
