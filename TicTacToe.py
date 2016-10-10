@@ -5,8 +5,10 @@ import time
 from pygame.locals import *
 
 global board
+global score
 board = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
-m, n = 1, -1
+score = [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+m, n = 'X', 'O'
 pygame.init()
 BOX_SIZE = 50
 BOX_GAP = 5
@@ -37,10 +39,12 @@ def drawBox():
 			idx = board[i][j]
 			if idx == 0:
 				text = ''
-			elif idx == 1:
-				text = 'X'
-			elif idx == -1:
-				text = 'O'
+			# elif idx == 1:
+			# 	text = 'X'
+			# elif idx == -1:
+			# 	text = 'O'
+			else:
+				text = idx
 			pygame.draw.rect(screen, WHITE, (x, y, BOX_SIZE, BOX_SIZE))
 			my_font = pygame.font.SysFont("arial", 64)
 			text_surface = my_font.render(text, True, RED)
@@ -72,47 +76,81 @@ def write(x, y):
 		board[2][2] = m
 
 def ai():
-	pool = []
-	for i in range(3):
-		for j in range(3):
-			if board[i][j] == 0:
-				pool.append((i, j))
-	a = random.choice(pool)
-	board[a[0]][a[1]] = n
+	if check():
+		max_score = -1
+		pos = (0, 0)
+		for i in range(3):
+			for j in range(3):
+				if board[i][j] == 0:
+					score[i][j] = -1
+					# row
+					score[i][j] += calcScore(board[i])
+					# col
+					line = [board[k][j] for k in range(3)]
+					score[i][j] += calcScore(line)
+					# left-top to right-bottom
+					if i == j:
+						line = [board[k][k] for k in range(3)]
+						score[i][j] += calcScore(line)
+					# right-top to left-bottom
+					if i + j == 2:
+						line = [board[k][2 - k] for k in range(3)]
+						score[i][j] += calcScore(line)
+					# center
+					if i == 1:
+						score[i][j] += 1
+					if j == 1:
+						score[i][j] += 1
+					if score[i][j] > max_score:
+						max_score = score[i][j]
+						pos = (i, j)
+		board[pos[0]][pos[1]] = n
+	drawBox()
 
-def checkWin():
+def calcScore(line):
+	score = 0
+	if line.count('X') == 2:
+		score += 1000
+	if line.count('O') == 2:
+		score += 900
+	if line.count('X') == 1 and line.count('O') == 0:
+		score += 100
+	if line.count('X') == 0 and line.count('O') == 1:
+		score += 90
+	if line.count(0) == 3:
+		score += 10
+	return score
+
+def check():
 	for i in range(3):
-		if board[i][0] == board[i][1] == board[i][2] == 1:
-			print 'X win'
-		if board[i][0] == board[i][1] == board[i][2] == -1:
-			print 'O win'
-		if board[0][i] == board[1][i] == board[2][i] == 1:
-			print 'X win'
-		if board[0][i] == board[1][i] == board[2][i] == -1:
-			print 'O win'
-	if board[0][0] == board[1][1] == board[2][2] == 1:
-		print 'X win'
-	if board[0][0] == board[1][1] == board[2][2] == -1:
-		print 'O win'
-	if board[2][0] == board[1][1] == board[0][2] == 1:
-		print 'X win'
-	if board[2][0] == board[1][1] == board[0][2] == 1:
-		print 'O win'
+		if board[i][0] == board[i][1] == board[i][2] != 0:
+			print board[i][0] + 'win'
+			return False
+		if board[0][i] == board[1][i] == board[2][i] != 0:
+			print board[0][i] + 'win'
+			return False
+	if board[0][0] == board[1][1] == board[2][2] != 0:
+		print board[0][0] + 'win'
+		return False
+	if board[2][0] == board[1][1] == board[0][2] != 0:
+		print board[2][0] + 'win'
+		return False
+	if 0 not in board[0] and 0 not in board[1] and 0 not in board[2]:
+		print 'Draw'
+		return False
+	return True
 
 def main():
 	init()
 	drawBox()
-	while True:
+	while check():
 		for event in pygame.event.get():
 			if event.type == QUIT or (event.type == KEYUP and event.key == K_ESCAPE):
 				pygame.display.quit()
 			if event.type == MOUSEBUTTONUP:
 				x, y = pygame.mouse.get_pos()
 				write(x, y)
-				checkWin()
 				ai()
-				checkWin()
-				drawBox()
 		pygame.display.update()
 
 
